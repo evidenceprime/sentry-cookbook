@@ -151,6 +151,13 @@ define :sentry_conf,
   if node['sentry']['cleanup']['on']
     Chef::Log.info("Making sentry config for cleanup #{node['sentry']['cleanup']['days']}")
 
+    script = "#{virtualenv_dir}/bin/sentry_cleanup.sh"
+    file script do
+      content ". #{virtualenv_dir}/bin/activate && #{virtualenv_dir}/bin/python #{virtualenv_dir}/bin/sentry --config=#{config} cleanup --days=#{node['sentry']['cleanup']['days']} && deactivate"
+      owner params[:user]
+      mode 007500
+    end
+
     cron_d "cleanup" do
       hour node["sentry"]["cleanup"]["time"]["hour"]
       minute node["sentry"]["cleanup"]["time"]["minute"]
@@ -159,7 +166,7 @@ define :sentry_conf,
       weekday node["sentry"]["cleanup"]["time"]["weekday"]
       user params[:user]
 
-      command ". #{virtualenv_dir}/bin/activate && #{virtualenv_dir}/bin/python #{virtualenv_dir}/bin/sentry --config=#{config} cleanup --days=#{node['sentry']['cleanup']['days']} && deactivate"
+      command "cronic #{script}"
     end
   end
 
